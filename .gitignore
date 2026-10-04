@@ -4,3 +4,6 @@ receipts-inbox.json
 desktop.ini
 .claude/
 *.bat
+# 家計簿データのバックアップ（書き出しファイル）
+kakeibo_*.json
+kakeibo_*.csv
