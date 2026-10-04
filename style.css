@@ -166,6 +166,15 @@ h1, h2 { margin: 0; }
   line-height: 1.4;
 }
 .field input[type="date"]::-webkit-date-and-time-value { text-align: left; }
+/* iPhone(Safari)の選択欄は標準表示だと高さ指定が効かないので、独自の▼を付けて揃える */
+.field select {
+  -webkit-appearance: none;
+  appearance: none;
+  padding-right: 34px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23898989' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+}
 .field input:focus, .field select:focus {
   outline: 2px solid var(--series-1);
   outline-offset: 1px;

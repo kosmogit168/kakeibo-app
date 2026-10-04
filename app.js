@@ -178,7 +178,8 @@ fStore.addEventListener('focus', () => renderStoreSuggestionList(fStore.value));
 fStore.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') storeSuggestionList.hidden = true;
 });
-storeSuggestionList.addEventListener('mousedown', (e) => {
+// iPhone のタップでも確実に選べるよう click で拾う（リスト内のクリックでは下の処理で閉じない）
+storeSuggestionList.addEventListener('click', (e) => {
   const item = e.target.closest('.autocomplete-item');
   if (!item) return;
   fStore.value = item.textContent;
