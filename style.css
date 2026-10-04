@@ -136,6 +136,16 @@ h1, h2 { margin: 0; }
 .field-span-1 { grid-column: span 1; }
 .field-toast { grid-column: 4; margin: 0; }
 .field-submit-btn { width: 100%; padding-left: 8px; padding-right: 8px; }
+
+/* スマホ幅：2列にして、記録するボタンは横いっぱいに
+   （日付|店名 → 金額|カテゴリ → メモ|入力者 → ボタン → メッセージ） */
+@media (max-width: 560px) {
+  .field-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .field-grid .field-span-2,
+  .field-grid .field-span-1 { grid-column: span 1; }
+  .field-grid > div.field-span-1 { grid-column: 1 / -1; }
+  .field-toast { grid-column: 1 / -1; }
+}
 .field input, .field select {
   font: inherit;
   font-size: 16px;
@@ -144,7 +154,18 @@ h1, h2 { margin: 0; }
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 10px 12px;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
 }
+/* iPhone(Safari)の日付欄は独自表示で高さ・文字位置が他の欄とずれるので揃える */
+.field input[type="date"] {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  line-height: 1.4;
+}
+.field input[type="date"]::-webkit-date-and-time-value { text-align: left; }
 .field input:focus, .field select:focus {
   outline: 2px solid var(--series-1);
   outline-offset: 1px;
