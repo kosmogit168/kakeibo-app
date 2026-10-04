@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kakeibo-cache-v4';
+const CACHE_NAME = 'kakeibo-cache-v5';
 const ASSETS = [
   './',
   './index.html',
@@ -30,7 +30,8 @@ self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   // ネット優先（更新がすぐ反映される）、オフライン時はキャッシュを使う
   event.respondWith(
-    fetch(event.request)
+    // cache:'no-cache' = ブラウザのHTTPキャッシュ（GitHub Pagesは最大10分）を使わず毎回最新版か確認する
+    fetch(event.request, { cache: 'no-cache' })
       .then((networkResponse) => {
         if (networkResponse.ok && new URL(event.request.url).origin === self.location.origin) {
           const copy = networkResponse.clone();

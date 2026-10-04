@@ -154,6 +154,7 @@ h1, h2 { margin: 0; }
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 10px 12px;
+  line-height: 1.4;
   width: 100%;
   min-width: 0;
   min-height: 44px;
