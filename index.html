@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>家計簿</title>
+<meta name="theme-color" content="#2a78d6">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+</head>
+<body>
+
+<header class="app-header">
+  <h1>家計簿</h1>
+  <button id="themeToggle" class="icon-btn" type="button" aria-label="表示切り替え" title="ライト/ダーク切り替え">◐</button>
+</header>
+
+<main id="main">
+
+  <!-- 入力 -->
+  <section class="tab" id="tab-entry" data-tab="entry">
+    <div class="card" id="quickFixedCard">
+      <h2 class="card-title">固定費をすぐに記録</h2>
+      <p class="hint">前回の金額を入力欄に反映します。内容を確認してから「記録する」を押してください。</p>
+      <div id="quickFixedList" class="quick-fixed-list"></div>
+    </div>
+
+    <form id="entryForm" class="card form-card">
+      <h2 class="card-title" id="entryFormTitle">記録する</h2>
+
+      <label class="field">
+        <span>レシート写真から読み取る（任意・支出のみ）</span>
+        <input type="file" id="f-receipt-photo" accept="image/*" capture="environment">
+        <p class="hint" id="ocrStatus" style="margin:6px 0 0"></p>
+      </label>
+
+      <label class="field">
+        <span>種別</span>
+        <div class="type-toggle" id="typeToggle">
+          <button type="button" class="type-btn is-active" data-type="expense">支出</button>
+          <button type="button" class="type-btn" data-type="income">収入</button>
+        </div>
+        <input type="hidden" id="f-type" value="expense">
+      </label>
+
+      <div class="field-grid">
+        <label class="field field-span-2">
+          <span>日付</span>
+          <input type="date" id="f-date" required>
+        </label>
+
+        <label class="field field-span-2" id="f-store-field">
+          <span id="f-store-label">購入店名</span>
+          <div class="autocomplete" id="storeAutocomplete">
+            <input type="text" id="f-store" autocomplete="off" placeholder="例）〇〇スーパー">
+            <ul class="autocomplete-list" id="storeSuggestionList" hidden></ul>
+          </div>
+        </label>
+
+        <label class="field field-span-2">
+          <span>金額（円）</span>
+          <input type="number" id="f-amount" inputmode="numeric" min="0" step="1" placeholder="0" required>
+        </label>
+
+        <label class="field field-span-2">
+          <span>カテゴリ</span>
+          <select id="f-category" required></select>
+        </label>
+
+        <label class="field field-span-2">
+          <span>メモ（任意）</span>
+          <input type="text" id="f-memo" placeholder="任意のメモ">
+        </label>
+
+        <label class="field field-span-1">
+          <span>入力者（任意）</span>
+          <input type="text" id="f-person" placeholder="例）太郎">
+        </label>
+
+        <div class="field field-span-1">
+          <button type="submit" class="btn btn-primary field-submit-btn" id="entrySubmitBtn">記録する</button>
+        </div>
+
+        <p class="toast field-toast" id="entryToast" role="status" aria-live="polite"></p>
+      </div>
+
+      <input type="hidden" id="f-id">
+
+      <div class="form-actions">
+        <button type="button" class="btn btn-ghost" id="entryCancelBtn" hidden>編集をやめる</button>
+      </div>
+    </form>
+  </section>
+
+  <!-- 明細 -->
+  <section class="tab" id="tab-list" data-tab="list" hidden>
+    <div class="card filter-card">
+      <div class="filter-row">
+        <label class="field field-inline">
+          <span>月</span>
+          <input type="month" id="list-month">
+        </label>
+        <label class="field field-inline">
+          <span>カテゴリ</span>
+          <select id="list-category"><option value="">すべて</option></select>
+        </label>
+        <label class="field field-inline field-grow">
+          <span>検索</span>
+          <input type="text" id="list-keyword" placeholder="店名・メモで検索">
+        </label>
+      </div>
+    </div>
+
+    <div class="card" style="padding:0">
+      <div class="table-wrap">
+        <table class="tx-table">
+          <thead>
+            <tr>
+              <th>日付</th>
+              <th>店舗名／内容</th>
+              <th>カテゴリ</th>
+              <th class="num">金額</th>
+              <th>入力者</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="list-body"></tbody>
+          <tfoot>
+            <tr>
+              <td colspan="3" class="muted">合計（表示中）</td>
+              <td class="num" id="list-total">¥0</td>
+              <td colspan="2"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <p class="empty-state" id="list-empty" hidden>該当する明細がありません。</p>
+    </div>
+  </section>
+
+  <!-- 集計（年間の一覧表） -->
+  <section class="tab" id="tab-summary" data-tab="summary" hidden>
+    <div class="month-nav card">
+      <button type="button" class="icon-btn" id="annualYearPrev" aria-label="前の年">‹</button>
+      <span id="annualYearLabel" class="month-label"></span>
+      <button type="button" class="icon-btn" id="annualYearNext" aria-label="次の年">›</button>
+    </div>
+
+    <div class="card" style="padding:0">
+      <h2 class="card-title" style="padding:16px 16px 0">毎月の収支</h2>
+      <div class="table-wrap">
+        <table class="tx-table annual-table" id="annualTable">
+          <thead>
+            <tr>
+              <th class="annual-group"></th>
+              <th class="annual-item">項目</th>
+              <th class="num">1月</th><th class="num">2月</th><th class="num">3月</th>
+              <th class="num">4月</th><th class="num">5月</th><th class="num">6月</th>
+              <th class="num">7月</th><th class="num">8月</th><th class="num">9月</th>
+              <th class="num">10月</th><th class="num">11月</th><th class="num">12月</th>
+              <th class="num">合計</th>
+            </tr>
+          </thead>
+          <tbody id="annualTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- グラフ -->
+  <section class="tab" id="tab-graphs" data-tab="graphs" hidden>
+    <div class="month-nav card">
+      <button type="button" class="icon-btn" id="summaryPrev" aria-label="前の月">‹</button>
+      <span id="summaryMonthLabel" class="month-label"></span>
+      <button type="button" class="icon-btn" id="summaryNext" aria-label="次の月">›</button>
+    </div>
+
+    <div class="stat-row" id="statRow"></div>
+
+    <div class="card">
+      <h2 class="card-title">日別カレンダー</h2>
+      <div id="dayCalendar" class="day-calendar"></div>
+      <p class="hint">色が濃いほどその日の支出が多いことを表します。緑の点がある日は収入の記録もあります。</p>
+    </div>
+
+    <div class="card">
+      <h2 class="card-title">変動費・固定費の内訳</h2>
+      <div id="groupBar" class="group-bar"></div>
+      <div id="groupLegend" class="legend"></div>
+    </div>
+
+    <div class="card">
+      <h2 class="card-title">カテゴリ別支出</h2>
+      <div id="categoryBars" class="category-bars"></div>
+    </div>
+
+    <div class="card">
+      <div class="month-nav" style="padding:0 0 4px">
+        <button type="button" class="icon-btn" id="yearPrev" aria-label="前の年">‹</button>
+        <span id="yearLabel" class="month-label"></span>
+        <button type="button" class="icon-btn" id="yearNext" aria-label="次の年">›</button>
+      </div>
+      <h2 class="card-title">年間の月別推移</h2>
+      <div id="yearChart" class="year-chart"></div>
+      <div id="yearLegend" class="legend"></div>
+    </div>
+
+    <div class="card" style="padding:0">
+      <h2 class="card-title" style="padding:16px 16px 0">カテゴリ別支出（表形式）</h2>
+      <div class="table-wrap">
+        <table class="tx-table" id="summaryTable">
+          <thead>
+            <tr><th>カテゴリ</th><th class="num">金額</th></tr>
+          </thead>
+          <tbody id="summaryTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- データ管理 -->
+  <section class="tab" id="tab-data" data-tab="data" hidden>
+    <div class="card">
+      <h2 class="card-title">書き出し（エクスポート）</h2>
+      <p class="hint">家族の端末ごとに入力したデータを合体させるときは、それぞれの端末でエクスポートし、もう一方の端末でインポートしてください。</p>
+      <div class="form-actions">
+        <button type="button" class="btn btn-primary" id="exportJsonBtn">JSONで書き出す（データ統合用）</button>
+        <button type="button" class="btn btn-secondary" id="exportCsvBtn">CSVで書き出す（表計算ソフト用）</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 class="card-title">読み込み（インポート）</h2>
+      <p class="hint">他の端末で書き出したJSONファイルを読み込みます。同じ記録は重複登録されません。</p>
+      <input type="file" id="importFile" accept="application/json">
+      <p class="toast" id="importToast" role="status" aria-live="polite"></p>
+    </div>
+
+    <div class="card">
+      <h2 class="card-title">データ削除</h2>
+      <p class="hint">この端末に保存されているすべての家計簿データを削除します。元に戻せません。</p>
+      <button type="button" class="btn btn-danger" id="resetBtn">全データを削除する</button>
+    </div>
+  </section>
+
+</main>
+
+<nav class="tabbar" aria-label="画面切り替え">
+  <button class="tabbar-btn is-active" data-tab-target="entry" type="button">
+    <span class="tabbar-icon">＋</span><span>入力</span>
+  </button>
+  <button class="tabbar-btn" data-tab-target="list" type="button">
+    <span class="tabbar-icon">☰</span><span>明細</span>
+  </button>
+  <button class="tabbar-btn" data-tab-target="summary" type="button">
+    <span class="tabbar-icon">▤</span><span>集計</span>
+  </button>
+  <button class="tabbar-btn" data-tab-target="graphs" type="button">
+    <span class="tabbar-icon">📈</span><span>グラフ</span>
+  </button>
+  <button class="tabbar-btn" data-tab-target="data" type="button">
+    <span class="tabbar-icon">⇅</span><span>データ</span>
+  </button>
+</nav>
+
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+# 公開しない個人ファイル・PC専用ファイル
+receipt-photos/
+receipts-inbox.json
+desktop.ini
+.claude/
+*.bat
